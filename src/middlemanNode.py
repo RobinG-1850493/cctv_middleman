@@ -4,6 +4,7 @@ import os
 import time
 import sys
 from std_msgs.msg import String
+from std_msgs.msg import String
 
 
 def callback(data):
@@ -17,7 +18,7 @@ def callback(data):
         os.system("~/Robin/catkin_ws/src/cctv_middleman/src/scripts/tracking.sh stream_" + splitmsg[1] + " tracking_" + splitmsg[1])
     elif msg.__contains__("personcounter"):
         splitmsg = str(msg).split(' ')
-        os.system("python ~/Robin/PersonCounter/PersonCounter_ROS.py --input stream_" + splitmsg[1] + " --output personcounter_"+ splitmsg[1])
+        os.system("python ~/Robin/PersonCounter/PersonCounter_ROS.py --input stream_" + splitmsg[1] + " --output personcounter_" + splitmsg[1])
 
 def quit_al(data):
     msg = str(data.data)
@@ -30,10 +31,21 @@ def quit_al(data):
     elif msg.__contains__("pc_quit"):
         os.system("rosnode kill `rosnode list | grep person_counter`")
 
+def streams(data):
+    msg = str(data.data)
+    pub = rospy.Publisher("cctv_info", String, queue_size=10)
+    if msg.__contains__("streams"):
+        streams = os.popen("rostopic list | grep stream").read()
+        streams = streams.split('\n')
+        for stream in streams:
+            if stream != '' and stream != 'stream_undefined' and stream is not None:
+                pub.publish(stream)
+
 def listener():
     rospy.init_node('middleman_node', anonymous=True)
     rospy.Subscriber("middleman", String, callback)
     rospy.Subscriber("middleman_quit", String, quit_al)
+    rospy.Subscriber("cctv_info", String, streams)
     rospy.spin()
 
 
